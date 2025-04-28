@@ -67,7 +67,7 @@ class SkillMatcherApp(tk.Tk):
         title = tk.Label(self.home_tab, text="Welcome to SkillMatcher!", font=("Arial", 20))
         title.pack(pady=20)
 
-        login_button = tk.Button(self.home_tab, text="Login", command=self.login_screen, width=20)
+        login_button = tk.Button(self.home_tab, text="Login", command=self.build_login_window, width=20)
         login_button.pack(pady=10)
 
         register_button = tk.Button(self.home_tab, text="Register", command=self.register_screen, width=20)
@@ -146,13 +146,52 @@ class SkillMatcherApp(tk.Tk):
         password_entry = tk.Entry(login_window, show="*")
         password_entry.pack()
 
-        def attempt_login():
-            email = email_entry.get()
-            password = password_entry.get()
-            self.authenticate_login(email, password)
-            login_window.destroy()
+    def build_login_window(self):
+        self.login_window = tk.Toplevel(self)
+        self.login_window.title("Login")
 
-        tk.Button(login_window, text="Login", command=attempt_login).pack(pady=10)
+        tk.Label(self.login_window, text="Email:").pack()
+        self.email_entry = tk.Entry(self.login_window)
+        self.email_entry.pack()
+
+        tk.Label(self.login_window, text="Password:").pack()
+        self.password_entry = tk.Entry(self.login_window, show="*")
+        self.password_entry.pack()
+
+        # ADD THIS BUTTON:
+        tk.Button(self.login_window, text="Login", command=self.attempt_login).pack(pady=10)
+
+    def attempt_login(self):
+        email = self.email_entry.get()
+        password = self.password_entry.get()
+
+        # Check if admin
+        for admin in self.admins:
+            if admin.email == email and admin.password == password:
+                self.current_admin = admin
+                messagebox.showinfo("Login Successful", f"Welcome Admin {admin.name}!")
+                self.show_admin_panel()
+                self.login_window.destroy()
+                return
+
+        # Check if employer
+        for employer in self.employers:
+            if employer.email == email and employer.password == password:
+                self.current_employer = employer
+                messagebox.showinfo("Login Successful", f"Welcome Employer {employer.company_name}!")
+                self.login_window.destroy()
+                return
+
+        # Check if user
+        for user in self.users:
+            if user.email == email and user.password == password:
+                self.current_user = user
+                messagebox.showinfo("Login Successful", f"Welcome {user.first_name} {user.last_name}!")
+                self.login_window.destroy()
+                return
+
+        # If no match
+        messagebox.showerror("Login Failed", "Invalid email or password.")
 
     def register_screen(self):
         register_window = tk.Toplevel(self)
@@ -189,6 +228,18 @@ class SkillMatcherApp(tk.Tk):
             register_window.destroy()
 
         tk.Button(register_window, text="Register", command=attempt_register).pack(pady=10)
+
+    def register_user(self, first_name, last_name, email, password, role):
+        if role.lower() == "user":
+            new_user = User(first_name, last_name, email, password, [])
+            self.users.append(new_user)
+            messagebox.showinfo("Success", f"User {first_name} {last_name} registered.")
+        elif role.lower() == "employer":
+            new_employer = Employer(first_name, email, password)
+            self.employers.append(new_employer)
+            messagebox.showinfo("Success", f"Employer {first_name} registered.")
+        else:
+            messagebox.showerror("Error", "Invalid role specified. Use 'user' or 'employer'.")
 
     def upload_resume(self):
         file_path = filedialog.askopenfilename(filetypes=[("Documents", "*.txt *.docx *.pdf")])
@@ -325,13 +376,24 @@ class SkillMatcherApp(tk.Tk):
             label.pack()
 
     def view_jobs(self):
+        if not self.jobs:
+            messagebox.showinfo("Info", "No jobs available.")
+            return
+
         jobs_window = tk.Toplevel(self)
-        jobs_window.title("All Jobs")
-        jobs_window.geometry("400x400")
+        jobs_window.title("Available Jobs")
+        jobs_window.geometry("500x400")
 
         for job in self.jobs:
-            label = tk.Label(jobs_window, text=f"{job.title} at {job.company}")
-            label.pack()
+            label = tk.Label(
+                jobs_window,
+                text=f"{job.title} at {job.company_name} in {job.location}\nRequired Skills: {', '.join(job.skills_required)}\nPosted by: {job.poster_email}",
+                justify="left",
+                anchor="w",
+                padx=10,
+                pady=5
+            )
+            label.pack(fill="both", padx=10, pady=5)
 
     def delete_user(self):
         delete_window = tk.Toplevel(self)
