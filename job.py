@@ -1,9 +1,7 @@
-# job.py
-
 class Job:
-    def __init__(self, title, company_name, location, skills_required, poster_email):
+    def __init__(self, title, company, location, skills_required, poster_email):
         self.title = title
-        self.company_name = company_name
+        self.company = company
         self.location = location
-        self.skills_required = skills_required  # list of skills
+        self.skills_required = skills_required
         self.poster_email = poster_email
