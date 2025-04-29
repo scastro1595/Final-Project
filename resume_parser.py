@@ -1,39 +1,102 @@
 # resume_parser.py
-import re
-from docx import Document
+import docx
 import PyPDF2
+import re
+
+
+def extract_text_from_pdf(file_path):
+    """
+    Extract text from PDF files
+
+    Args:
+        file_path (str): Path to the PDF file
+
+    Returns:
+        str: Extracted text from the PDF
+    """
+    try:
+        with open(file_path, 'rb') as file:
+            reader = PyPDF2.PdfReader(file)
+            text = ''
+            for page in reader.pages:
+                text += page.extract_text()
+        return text
+    except Exception as e:
+        print(f"Error extracting text from PDF: {e}")
+        return ""
+
+
+def extract_text_from_docx(file_path):
+    """
+    Extract text from DOCX files
+
+    Args:
+        file_path (str): Path to the DOCX file
+
+    Returns:
+        str: Extracted text from the DOCX
+    """
+    try:
+        doc = docx.Document(file_path)
+        return '\n'.join([paragraph.text for paragraph in doc.paragraphs])
+    except Exception as e:
+        print(f"Error extracting text from DOCX: {e}")
+        return ""
+
+
+def extract_text_from_txt(file_path):
+    """
+    Extract text from TXT files
+
+    Args:
+        file_path (str): Path to the TXT file
+
+    Returns:
+        str: Extracted text from the TXT
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read()
+    except Exception as e:
+        print(f"Error reading TXT file: {e}")
+        return ""
 
 
 def parse_resume(file_path):
-    skills = []
+    """
+    Parse resume and extract skills from various file types
 
-    if file_path.endswith(".pdf"):
-        reader = PyPDF2.PdfReader(file_path)
-        for page in reader.pages:
-            text = page.extract_text()
-            if text:
-                skills.extend(extract_skills_from_text(text))
+    Args:
+        file_path (str): Path to the resume file
 
-    elif file_path.endswith(".docx"):
-        doc = Document(file_path)
-        for para in doc.paragraphs:
-            skills.extend(extract_skills_from_text(para.text))
+    Returns:
+        list: Extracted skills
+    """
+    # Determine file type
+    file_extension = file_path.lower().split('.')[-1]
 
-    # Remove duplicates and return the extracted skills
-    return list(set(skills))
+    # Extract text based on file type
+    if file_extension == 'pdf':
+        text = extract_text_from_pdf(file_path)
+    elif file_extension in ['docx', 'doc']:
+        text = extract_text_from_docx(file_path)
+    elif file_extension == 'txt':
+        text = extract_text_from_txt(file_path)
+    else:
+        print(f"Unsupported file type: {file_extension}")
+        return []
 
+    # Convert to lowercase and remove special characters
+    text = re.sub(r'[^a-zA-Z\s]', '', text.lower())
 
-def extract_skills_from_text(text):
-    # Define skill keywords (you can add more here as needed)
-    keywords = ['python', 'java', 'c++', 'javascript', 'html', 'css', 'sql', 'management', 'leadership', 'aws']
+    # Split into words
+    words = text.split()
 
-    # Convert text to lowercase to make matching case-insensitive
-    text = text.lower()
-
-    # Use regular expression to extract keywords, handling word boundaries and punctuations
-    skills = []
-    for keyword in keywords:
-        if re.search(r'\b' + re.escape(keyword) + r'\b', text):
-            skills.append(keyword)
+    # Filter and clean skills
+    skills = list(set(
+        word for word in words
+        if len(word) > 2 and  # Longer than 2 characters
+        not word.isdigit()  # Not a number
+    ))
 
     return skills
